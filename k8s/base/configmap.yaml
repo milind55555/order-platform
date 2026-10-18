@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: order-platform
+data:
+  SERVER_PORT: "8080"
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  REDIS_HOST: redis
+  DB_USER: postgres
+  AUTH_SERVICE_URL: http://auth-service:8080
+  ORDER_SERVICE_URL: http://order-service:8080
+  INVENTORY_SERVICE_URL: http://inventory-service:8080
+  PAYMENT_SERVICE_URL: http://payment-service:8080

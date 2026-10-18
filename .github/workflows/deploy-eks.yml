@@ -1,0 +1,44 @@
+name: Deploy to EKS
+
+# Manual deploy of a built image tag (commit SHA) to your EKS cluster.
+# Required repository secrets/variables:
+#   AWS_ROLE_ARN   - IAM role assumable via GitHub OIDC with eks:DescribeCluster + cluster access
+#   AWS_REGION     - e.g. ap-south-1
+#   EKS_CLUSTER    - cluster name
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Image tag to deploy (commit SHA or latest)
+        required: true
+        default: latest
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name "${{ secrets.EKS_CLUSTER }}" --region "${{ secrets.AWS_REGION }}"
+      - name: Set image tags
+        working-directory: k8s/base
+        run: |
+          for svc in api-gateway auth-service order-service inventory-service payment-service; do
+            kustomize edit set image "$svc=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/order-platform-$svc:${{ inputs.image_tag }}"
+          done
+      - name: Apply manifests
+        run: kubectl apply -k k8s/base
+      - name: Wait for rollouts
+        run: |
+          for svc in api-gateway auth-service order-service inventory-service payment-service; do
+            kubectl -n order-platform rollout status deployment/$svc --timeout=300s
+          done

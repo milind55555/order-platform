@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - api-gateway.yaml
+  - auth-service.yaml
+  - order-service.yaml
+  - inventory-service.yaml
+  - payment-service.yaml
+  - hpa.yaml
+  - ingress.yaml
+# Point each image at your registry (CI pushes ghcr.io/<owner>/order-platform-<service>).
+# Deploy workflow overrides the tag with the commit SHA.
+images:
+  - name: api-gateway
+    newName: ghcr.io/your_github_username/order-platform-api-gateway
+    newTag: latest
+  - name: auth-service
+    newName: ghcr.io/your_github_username/order-platform-auth-service
+    newTag: latest
+  - name: order-service
+    newName: ghcr.io/your_github_username/order-platform-order-service
+    newTag: latest
+  - name: inventory-service
+    newName: ghcr.io/your_github_username/order-platform-inventory-service
+    newTag: latest
+  - name: payment-service
+    newName: ghcr.io/your_github_username/order-platform-payment-service
+    newTag: latest
